@@ -1,0 +1,6 @@
+/home/marco/Documenti/AttivitaHAM/HALtest/HALtest/CMakeFiles/HALtest.dir
+/home/marco/Documenti/AttivitaHAM/HALtest/HALtest/CMakeFiles/edit_cache.dir
+/home/marco/Documenti/AttivitaHAM/HALtest/HALtest/CMakeFiles/rebuild_cache.dir
+/home/marco/Documenti/AttivitaHAM/HALtest/HALtest/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir
+/home/marco/Documenti/AttivitaHAM/HALtest/HALtest/cmake/stm32cubemx/CMakeFiles/edit_cache.dir
+/home/marco/Documenti/AttivitaHAM/HALtest/HALtest/cmake/stm32cubemx/CMakeFiles/rebuild_cache.dir
