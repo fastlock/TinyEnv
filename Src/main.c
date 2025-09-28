@@ -61,6 +61,13 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
+osThreadId_t blinkTaskHandle;
+const osThreadAttr_t blinkTask_attributes = {
+  .name = "blinkTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,6 +78,8 @@ static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 void StartDefaultTask(void *argument);
+void BlinkTask(void *argument);
+
 
 /* USER CODE BEGIN PFP */
 
@@ -140,6 +149,7 @@ int main(void)
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  blinkTaskHandle =   osThreadNew(BlinkTask ,NULL, &blinkTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -674,6 +684,25 @@ void StartDefaultTask(void *argument)
     //osDelay(1);
   }
   /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_BlinkTask */
+/**
+  * @brief  Function implementing the BlinkTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartBlinkTask */
+void BlinkTask(void *argument)
+{
+  /* USER CODE BEGIN BlinkTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+    osDelay(1000);
+  }
+  /* USER CODE END BlinkTask */
 }
 
 /**
