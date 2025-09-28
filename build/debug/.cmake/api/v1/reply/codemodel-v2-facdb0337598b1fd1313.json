@@ -19,7 +19,7 @@
 					"source" : ".",
 					"targetIndexes" : 
 					[
-						0
+						1
 					]
 				},
 				{
@@ -34,7 +34,8 @@
 					"source" : "cmake/stm32cubemx",
 					"targetIndexes" : 
 					[
-						1
+						0,
+						2
 					]
 				}
 			],
@@ -51,23 +52,31 @@
 					"targetIndexes" : 
 					[
 						0,
-						1
+						1,
+						2
 					]
 				}
 			],
 			"targets" : 
 			[
 				{
+					"directoryIndex" : 1,
+					"id" : "FreeRTOS::@768a070a0fe75716b479",
+					"jsonFile" : "target-FreeRTOS-Debug-555d8413bcb926b6f7b5.json",
+					"name" : "FreeRTOS",
+					"projectIndex" : 0
+				},
+				{
 					"directoryIndex" : 0,
 					"id" : "HALtest::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-HALtest-Debug-955247b2ab551d51a469.json",
+					"jsonFile" : "target-HALtest-Debug-04a4ab5f731d83dcb82f.json",
 					"name" : "HALtest",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 1,
 					"id" : "STM32_Drivers::@768a070a0fe75716b479",
-					"jsonFile" : "target-STM32_Drivers-Debug-fca4e9c25a683ce12333.json",
+					"jsonFile" : "target-STM32_Drivers-Debug-debc846ff126a4078b57.json",
 					"name" : "STM32_Drivers",
 					"projectIndex" : 0
 				}

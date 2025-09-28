@@ -49,14 +49,10 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-
-void OLED_Init(void);
-void OLED_Fill(uint8_t pattern);
-void OLED_SetCursor(uint8_t x, uint8_t y);
-void OLED_DrawChar(uint8_t x, uint8_t y, char c);
-void OLED_Print(uint8_t x, uint8_t y, const char *str);
 
 /* USER CODE BEGIN EFP */
 
@@ -179,6 +175,55 @@ static const uint8_t font5x7[96][5] = {
   {0x00,0x41,0x36,0x08,0x00}, // '}'
   {0x10,0x08,0x08,0x10,0x08}, // '~'
 };
+
+// Note – Frequenze in Hz
+#define NOTE_C3   130
+#define NOTE_CS3  138
+#define NOTE_D3   146
+#define NOTE_DS3  155
+#define NOTE_E3   164
+#define NOTE_F3   174
+#define NOTE_FS3  185
+#define NOTE_G3   196
+#define NOTE_GS3  207
+#define NOTE_A3   220
+#define NOTE_AS3  233
+#define NOTE_B3   246
+
+#define NOTE_C4   261
+#define NOTE_CS4  277
+#define NOTE_D4   293
+#define NOTE_DS4  311
+#define NOTE_E4   329
+#define NOTE_F4   349
+#define NOTE_FS4  370
+#define NOTE_G4   392
+#define NOTE_GS4  415
+#define NOTE_A4   440
+#define NOTE_AS4  466
+#define NOTE_B4   493
+
+#define NOTE_C5   523
+#define NOTE_CS5  554
+#define NOTE_D5   587
+#define NOTE_DS5  622
+#define NOTE_E5   659
+#define NOTE_F5   698
+#define NOTE_FS5  740
+#define NOTE_G5   784
+#define NOTE_GS5  830
+#define NOTE_A5   880
+#define NOTE_AS5  932
+#define NOTE_B5   987
+
+#define NOTE_C6   1046
+#define NOTE_D6   1174
+#define NOTE_E6   1318
+#define NOTE_F6   1396
+#define NOTE_G6   1568
+#define NOTE_A6   1760
+#define NOTE_B6   1976
+
 
 /* USER CODE END Private defines */
 

@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -35,6 +36,7 @@
 
 #define OLED_WIDTH 128
 #define OLED_HEIGHT 64
+#define MAX_PWM 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,8 +47,18 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
+TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim3;
+
 UART_HandleTypeDef huart2;
 
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -56,6 +68,10 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_TIM3_Init(void);
+void StartDefaultTask(void *argument);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -96,33 +112,55 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_I2C1_Init();
+  MX_TIM1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL); // avvia contatore encoder
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
-  char msg[] = "Hello from STM32!\r\n";
-  char str[5];
-  int value = 0;
-  OLED_Init();
-  HAL_Delay(500);
-  OLED_Fill(0x00); // pulisci schermo
-  OLED_Print(0,2,"HELLO STM32!");
+  
   while (1)
   {
     /* USER CODE END WHILE */
-    HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-    
-    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-    //I2C_Scan();
-    OLED_ClearArea(0, 0, 6*5, 1); // cancella 5 caratteri max (6 colonne per carattere)
-    sprintf(str, "%d", value);
-    OLED_Print(0, 0, str);
-    value++;
-    HAL_Delay(200);
-    //HAL_Delay(500);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -185,7 +223,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed =50000 ;//100000;
+  hi2c1.Init.ClockSpeed = 100000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -200,6 +238,130 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 83;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 999;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 500;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+  HAL_TIM_MspPostInit(&htim1);
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 65535;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
 
 }
 
@@ -262,6 +424,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LD2_Pin */
   GPIO_InitStruct.Pin = LD2_Pin;
@@ -396,7 +564,139 @@ void OLED_ClearArea(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
     }
 }
 
+void Buzzer_Play(uint16_t freq, uint16_t duration_ms)
+{
+    uint32_t timer_clk = 84000000; // APB2 timer clock
+    uint32_t prescaler = 83;       // TIM1 prescaler
+    uint32_t arr = (timer_clk / (prescaler+1)) / freq - 1;
+
+    // aggiorna ARR
+    __HAL_TIM_SET_AUTORELOAD(&htim1, arr);
+
+    // duty cycle 50%
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, arr/2);
+
+    // avvia PWM
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+
+    HAL_Delay(duration_ms);
+
+    
+
+    // spegni PWM
+    HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_3);
+}
+
+void set_duty(int16_t duty_percent)
+{
+    extern TIM_HandleTypeDef htim1;
+    uint32_t arr = __HAL_TIM_GET_AUTORELOAD(&htim1);
+    uint32_t duty = arr * duty_percent / 100;
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, duty);
+}
+
+void start_pwm(int8_t start)
+{
+  if(start == 1)
+  {
+    extern TIM_HandleTypeDef htim1;
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+  }
+  else
+  {
+    extern TIM_HandleTypeDef htim1;
+    HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_3);
+  }
+}
+
+
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void *argument)
+{
+  /* USER CODE BEGIN 5 */
+
+  uint16_t melody[] = {NOTE_C4, NOTE_E4, NOTE_G4, NOTE_C5, NOTE_G4, NOTE_E4, NOTE_D4, NOTE_C4};
+  uint16_t durations[] = {250, 250, 250, 250, 250, 250, 250, 250};
+  uint8_t notes = 8;
+  char napule[6][12]= {"fratm","fratt","frate sua","sorma","sorta","sora sua"};
+  char str[50];
+  char str_r2[50];
+  char str_r3[50];
+  int value = 0;
+  OLED_Init();
+  HAL_Delay(500);
+  OLED_Fill(0x00); // pulisci schermo
+  uint16_t prev_position= 0;
+  int16_t select_pwm   = 0;
+  start_pwm(1);//avvia PWM
+
+  /* Infinite loop */
+  for(;;)
+  {
+     uint16_t position = __HAL_TIM_GET_COUNTER(&htim3) / 2;
+    int16_t delta = (int16_t)(position - prev_position);
+    prev_position = position;
+
+    
+    
+    if(select_pwm < MAX_PWM || (delta)<0)
+    {
+      select_pwm += (delta);
+    }
+
+    
+    if(select_pwm > MAX_PWM) select_pwm = MAX_PWM;
+    
+    
+    set_duty(select_pwm);
+
+    sprintf(str,"Pos: %d",position);
+    sprintf(str_r2,"PWM: %d",select_pwm);
+    sprintf(str_r3,"delta: %d",delta);
+    if(delta != 0)
+    {
+      OLED_ClearArea(0,0,100,1);
+      OLED_ClearArea(0,1,100,1);
+      OLED_ClearArea(0,2,128,1);
+    }
+    
+    OLED_Print(0,0,str);
+    OLED_Print(0,1,str_r2);
+    OLED_Print(0,2,str_r3);
+    //osDelay(1);
+  }
+  /* USER CODE END 5 */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM11 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM11)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
