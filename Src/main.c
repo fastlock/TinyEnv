@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ApplicationDefine.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,10 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define OLED_ADDR 0x3C << 1   // attenzione: HAL vuole indirizzo << 1
 
-#define OLED_WIDTH 128
-#define OLED_HEIGHT 64
 #define MAX_PWM 100
 /* USER CODE END PD */
 
@@ -61,13 +58,6 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
-osThreadId_t blinkTaskHandle;
-const osThreadAttr_t blinkTask_attributes = {
-  .name = "blinkTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -78,7 +68,7 @@ static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 void StartDefaultTask(void *argument);
-void BlinkTask(void *argument);
+
 
 
 /* USER CODE BEGIN PFP */
@@ -148,11 +138,12 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  blinkTaskHandle =   osThreadNew(BlinkTask ,NULL, &blinkTask_attributes);
+  //defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes );
+  //blinkTaskHandle =   osThreadNew(BlinkTask       , NULL, &blinkTask_attributes   );
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  ApplicationDefine(); // definizione dei task dell'applicazione
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -472,107 +463,6 @@ void I2C_Scan(void)
     HAL_UART_Transmit(&huart2, (uint8_t*)"Scan done.\r\n", 12, HAL_MAX_DELAY);
 }
 
-void OLED_SendCommand(uint8_t cmd)
-{
-    uint8_t control = 0x00; // Co = 0, D/C# = 0
-    uint8_t data[2] = { control, cmd };
-    HAL_I2C_Master_Transmit(&hi2c1, OLED_ADDR, data, 2, HAL_MAX_DELAY);
-}
-
-void OLED_SendData(uint8_t dataByte)
-{
-    uint8_t control = 0x40; // Co = 0, D/C# = 1
-    uint8_t data[2] = { control, dataByte };
-    HAL_I2C_Master_Transmit(&hi2c1, OLED_ADDR, data, 2, HAL_MAX_DELAY);
-}
-
-void OLED_Init(void)
-{
-    HAL_Delay(100); // attesa power-up
-
-    OLED_SendCommand(0xAE); // display off
-    OLED_SendCommand(0xD5); // set display clock divide
-    OLED_SendCommand(0x80);
-    OLED_SendCommand(0xA8); // set multiplex
-    OLED_SendCommand(0x3F); // 1/64 duty
-    OLED_SendCommand(0xD3); // set display offset
-    OLED_SendCommand(0x00);
-    OLED_SendCommand(0x40); // set start line
-    OLED_SendCommand(0x8D); // charge pump
-    OLED_SendCommand(0x14);
-    OLED_SendCommand(0x20); // memory mode
-    OLED_SendCommand(0x00);
-    OLED_SendCommand(0xA1); // segment remap
-    OLED_SendCommand(0xC8); // com scan dec
-    OLED_SendCommand(0xDA); // set compins
-    OLED_SendCommand(0x12);
-    OLED_SendCommand(0x81); // contrast
-    OLED_SendCommand(0xCF);
-    OLED_SendCommand(0xD9); // pre-charge
-    OLED_SendCommand(0xF1);
-    OLED_SendCommand(0xDB); // vcom detect
-    OLED_SendCommand(0x40);
-    OLED_SendCommand(0xA4); // resume ram content
-    OLED_SendCommand(0xA6); // normal display
-    OLED_SendCommand(0xAF); // display on
-}
-
-void OLED_Fill(uint8_t pattern)
-{
-    for (uint8_t page = 0; page < 8; page++) {
-        OLED_SendCommand(0xB0 + page); // set page address
-        OLED_SendCommand(0x00);        // low column start
-        OLED_SendCommand(0x10);        // high column start
-
-        for (uint8_t col = 0; col < 128; col++) {
-            OLED_SendData(pattern);
-        }
-    }
-}
-
-// imposta posizione (colonna x, pagina y)
-void OLED_SetCursor(uint8_t x, uint8_t y)
-{
-    OLED_SendCommand(0xB0 + y);             // pagina (0–7)
-    OLED_SendCommand(0x00 + (x & 0x0F));    // lower column
-    OLED_SendCommand(0x10 + (x >> 4));      // higher column
-}
-
-// disegna un carattere (5x7)
-void OLED_DrawChar(uint8_t x, uint8_t y, char c)
-{
-    if (c < 0x20 || c > 0x7F) c = '?'; // caratteri fuori range
-    OLED_SetCursor(x, y);
-
-    for (int i = 0; i < 5; i++) {
-        OLED_SendData(font5x7[c - 0x20][i]);
-    }
-    OLED_SendData(0x00); // spazio tra lettere
-}
-
-// scrive una stringa
-void OLED_Print(uint8_t x, uint8_t y, const char *str)
-{
-    while (*str) {
-        OLED_DrawChar(x, y, *str++);
-        x += 6; // 5 colonne + 1 spazio
-        if (x + 6 >= OLED_WIDTH) {
-            x = 0; y++; // vai a capo
-        }
-        if (y >= 8) break; // fuori dallo schermo
-    }
-}
-
-// cancella solo l’area del numero
-void OLED_ClearArea(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
-{
-    for (uint8_t page = y; page < y + height; page++)
-    {
-        OLED_SetCursor(x, page);
-        for (uint8_t col = 0; col < width; col++)
-            OLED_SendData(0x00);
-    }
-}
 
 void Buzzer_Play(uint16_t freq, uint16_t duration_ms)
 {
@@ -604,7 +494,6 @@ void set_duty(int16_t duty_percent)
     uint32_t duty = arr * duty_percent / 100;
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, duty);
 }
-
 void start_pwm(int8_t start)
 {
   if(start == 1)
@@ -686,25 +575,6 @@ void StartDefaultTask(void *argument)
   /* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_BlinkTask */
-/**
-  * @brief  Function implementing the BlinkTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartBlinkTask */
-void BlinkTask(void *argument)
-{
-  /* USER CODE BEGIN BlinkTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-    osDelay(1000);
-  }
-  /* USER CODE END BlinkTask */
-}
-
 /**
   * @brief  Period elapsed callback in non blocking mode
   * @note   This function is called  when TIM11 interrupt took place, inside
@@ -738,8 +608,8 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
-      //HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-      //HAL_Delay(100);
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+      HAL_Delay(100);
   }
   /* USER CODE END Error_Handler_Debug */
 }
