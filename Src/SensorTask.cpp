@@ -10,12 +10,12 @@ void SerialPrint(const char* msg) {
 }
 
 
-SensorTask::SensorTask(I2C_HandleTypeDef * i2cPeriph) : local_sht2x_ui2c(i2cPeriph), taskHandle(nullptr) {}
+SensorTask::SensorTask(I2C_HandleTypeDef * i2cPeriph,QueueHandle_t queue) : local_sht2x_ui2c(i2cPeriph), _sensorDataQueue(queue),taskHandle(nullptr) {}
 
 void SensorTask::start() {
     osThreadAttr_t attrs = {
         .name = "SensorTask",
-        .stack_size = 1024,
+        .stack_size = 2048,
         .priority = (osPriority_t) osPriorityAboveNormal,
     };
     taskHandle = osThreadNew(SensorTask::run, this, &attrs);
@@ -43,6 +43,12 @@ void SensorTask::run(void* params) {
         char buffer[64];
         snprintf(buffer, sizeof(buffer), "Temp: %.2f C, Hum: %.2f%%\r\n", celsius, humidity);
         SerialPrint(buffer);
+        // Invia i dati alla coda
+        if (self->_sensorDataQueue != nullptr) 
+        {
+            SensorData_t data = {celsius, humidity};
+            xQueueSend(self->_sensorDataQueue, &data, 100);
+        }
 
         osDelay(1000);
     }

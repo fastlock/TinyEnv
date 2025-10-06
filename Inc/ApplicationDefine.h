@@ -10,6 +10,7 @@ extern "C" {
 
 void ApplicationDefine(void);
 
+
 #ifdef __cplusplus
 }
 #endif

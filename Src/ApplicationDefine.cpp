@@ -3,6 +3,8 @@
 #include "Oled.h"
 #include "BlinkTask.h"
 #include "SensorTask.h"
+#include "queue.h"
+#include "AppConst.h"
 //#include "stm32f4xx_hal.h"
 
 extern I2C_HandleTypeDef hi2c1;
@@ -11,12 +13,21 @@ extern "C" {
    extern GPIO_InitTypeDef GPIO_InitStruct;
 }
 
+static QueueHandle_t sensorDataQueue = nullptr;
+
 extern "C" void ApplicationDefine(void) {
+
+    sensorDataQueue = xQueueCreate(2, sizeof(SensorData_t));
+
+    if (sensorDataQueue == NULL) {
+        // Errore creazione queue
+    }
+
     // Inizializza l'OLED e avvia il task di gestione del display
     static OLED oled(&hi2c1);
-    static DisplayTask displayTask(&oled);
+    static DisplayTask displayTask(&oled,sensorDataQueue);
     static BlinkTask blink(GPIOA, GPIO_PIN_5);
-    static SensorTask sensorTask(&hi2c1);
+    static SensorTask sensorTask(&hi2c1,sensorDataQueue);
 
     
     blink.start();
