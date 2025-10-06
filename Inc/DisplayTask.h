@@ -10,8 +10,10 @@ public:
     void start();
 
 private:
-    static void run(void* params);
+
     OLED* oledPtr;
+    
+    static void run(void* params);
     osThreadId_t taskHandle;
 };
 

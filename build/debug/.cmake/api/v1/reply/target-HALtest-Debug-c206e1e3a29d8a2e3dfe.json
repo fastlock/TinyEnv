@@ -43,7 +43,7 @@
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 52,
+				"line" : 57,
 				"parent" : 0
 			},
 			{
@@ -55,7 +55,7 @@
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 46,
+				"line" : 52,
 				"parent" : 0
 			}
 		]
@@ -140,7 +140,8 @@
 				3,
 				4,
 				5,
-				6
+				6,
+				8
 			]
 		},
 		{
@@ -274,10 +275,11 @@
 			"language" : "CXX",
 			"sourceIndexes" : 
 			[
-				8,
 				9,
 				10,
-				11
+				11,
+				12,
+				13
 			]
 		}
 	],
@@ -302,7 +304,7 @@
 				"role" : "flags"
 			},
 			{
-				"fragment" : "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -T \"/home/marco/Documenti/AttivitaHAM/HALtest/HALtest/STM32F401XX_FLASH.ld\" --specs=nano.specs -Wl,-Map=HALtest.map -Wl,--gc-sections -Wl,--print-memory-usage",
+				"fragment" : "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -T \"/home/marco/Documenti/AttivitaHAM/HALtest/HALtest/STM32F401XX_FLASH.ld\" --specs=nano.specs -Wl,-Map=HALtest.map -Wl,--gc-sections -Wl,--print-memory-usage -u _printf_float",
 				"role" : "flags"
 			},
 			{
@@ -336,7 +338,9 @@
 				8,
 				9,
 				10,
-				11
+				11,
+				12,
+				13
 			]
 		},
 		{
@@ -350,8 +354,6 @@
 			"name" : "Object Libraries",
 			"sourceIndexes" : 
 			[
-				12,
-				13,
 				14,
 				15,
 				16,
@@ -378,7 +380,9 @@
 				37,
 				38,
 				39,
-				40
+				40,
+				41,
+				42
 			]
 		}
 	],
@@ -434,6 +438,12 @@
 		},
 		{
 			"backtrace" : 6,
+			"compileGroupIndex" : 0,
+			"path" : "Src/usr_drivers/sht2x_for_stm32_hal.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 6,
 			"compileGroupIndex" : 2,
 			"path" : "Src/ApplicationDefine.cpp",
 			"sourceGroupIndex" : 0
@@ -454,6 +464,12 @@
 			"backtrace" : 6,
 			"compileGroupIndex" : 2,
 			"path" : "Src/Oled.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 6,
+			"compileGroupIndex" : 2,
+			"path" : "Src/SensorTask.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{

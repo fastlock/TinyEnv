@@ -2,6 +2,7 @@
 #include "DisplayTask.h"
 #include "Oled.h"
 #include "BlinkTask.h"
+#include "SensorTask.h"
 //#include "stm32f4xx_hal.h"
 
 extern I2C_HandleTypeDef hi2c1;
@@ -15,11 +16,13 @@ extern "C" void ApplicationDefine(void) {
     static OLED oled(&hi2c1);
     static DisplayTask displayTask(&oled);
     static BlinkTask blink(GPIOA, GPIO_PIN_5);
+    static SensorTask sensorTask(&hi2c1);
 
+    
     blink.start();
     displayTask.start();
+    sensorTask.start();
 
-    // Avvia qui altri task se servono
 
 }
 

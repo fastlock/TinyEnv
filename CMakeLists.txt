@@ -41,13 +41,18 @@ add_subdirectory(cmake/stm32cubemx)
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
 )
-# Add sources to executable
-file(GLOB SRC_FILES "Src/*.cpp")
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
-    ${SRC_FILES}
-)
 
+# Abilita supporto stampa anche per float in printf/snprintf
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u _printf_float")
+
+# Add sources to executable
+file(GLOB SRC_FILES_C "Src/usr_drivers/*.c")
+file(GLOB SRC_FILES_CPP "Src/*.cpp")
+
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+   ${SRC_FILES_C}
+   ${SRC_FILES_CPP}
+)
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
