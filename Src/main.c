@@ -33,7 +33,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define MAX_PWM 100
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -445,48 +444,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void I2C_Scan(void)
-{
-    char msg[64];
-    HAL_UART_Transmit(&huart2, (uint8_t*)"\r\nScanning I2C bus...\r\n", 24, HAL_MAX_DELAY);
-
-    for (uint8_t addr = 1; addr < 128; addr++)
-    {
-        // Indirizzo a 7 bit (HAL usa indirizzo << 1 internamente)
-        if (HAL_I2C_IsDeviceReady(&hi2c1, (addr << 1), 1, 10) == HAL_OK)
-        {
-            int len = snprintf(msg, sizeof(msg), "I2C device found at 0x%02X\r\n", addr);
-            HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
-        }
-    }
-
-    HAL_UART_Transmit(&huart2, (uint8_t*)"Scan done.\r\n", 12, HAL_MAX_DELAY);
-}
-
-
-void Buzzer_Play(uint16_t freq, uint16_t duration_ms)
-{
-    uint32_t timer_clk = 84000000; // APB2 timer clock
-    uint32_t prescaler = 83;       // TIM1 prescaler
-    uint32_t arr = (timer_clk / (prescaler+1)) / freq - 1;
-
-    // aggiorna ARR
-    __HAL_TIM_SET_AUTORELOAD(&htim1, arr);
-
-    // duty cycle 50%
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, arr/2);
-
-    // avvia PWM
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-
-    HAL_Delay(duration_ms);
-
-    
-
-    // spegni PWM
-    HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_3);
-}
-
 void set_duty(int16_t duty_percent)
 {
     extern TIM_HandleTypeDef htim1;
@@ -508,7 +465,6 @@ void start_pwm(int8_t start)
   }
 }
 
-
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -521,57 +477,11 @@ void start_pwm(int8_t start)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-
-  uint16_t melody[] = {NOTE_C4, NOTE_E4, NOTE_G4, NOTE_C5, NOTE_G4, NOTE_E4, NOTE_D4, NOTE_C4};
-  uint16_t durations[] = {250, 250, 250, 250, 250, 250, 250, 250};
-  uint8_t notes = 8;
-  char napule[6][12]= {"fratm","fratt","frate sua","sorma","sorta","sora sua"};
-  char str[50];
-  char str_r2[50];
-  char str_r3[50];
-  int value = 0;
-  OLED_Init();
-  HAL_Delay(500);
-  OLED_Fill(0x00); // pulisci schermo
-  uint16_t prev_position= 0;
-  int16_t select_pwm   = 0;
-  start_pwm(1);//avvia PWM
-
   /* Infinite loop */
-  for(;;)
-  {
-     uint16_t position = __HAL_TIM_GET_COUNTER(&htim3) / 2;
-    int16_t delta = (int16_t)(position - prev_position);
-    prev_position = position;
-
-    
-    
-    if(select_pwm < MAX_PWM || (delta)<0)
-    {
-      select_pwm += (delta);
-    }
-
-    
-    if(select_pwm > MAX_PWM) select_pwm = MAX_PWM;
-    
-    
-    set_duty(select_pwm);
-
-    sprintf(str,"Pos: %d",position);
-    sprintf(str_r2,"PWM: %d",select_pwm);
-    sprintf(str_r3,"delta: %d",delta);
-    if(delta != 0)
-    {
-      OLED_ClearArea(0,0,100,1);
-      OLED_ClearArea(0,1,100,1);
-      OLED_ClearArea(0,2,128,1);
-    }
-    
-    OLED_Print(0,0,str);
-    OLED_Print(0,1,str_r2);
-    OLED_Print(0,2,str_r3);
-    //osDelay(1);
-  }
+  // for(;;)
+  // {
+  //   osDelay(1);
+  // }
   /* USER CODE END 5 */
 }
 
