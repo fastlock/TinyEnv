@@ -7,7 +7,7 @@ void DisplayTask::start() {
     osThreadAttr_t attrs = {
         .name = "DisplayTask",
         .stack_size = 4096,
-        .priority = (osPriority_t) osPriorityAboveNormal,
+        .priority = (osPriority_t) osPriorityNormal,
     };
     taskHandle = osThreadNew(DisplayTask::run, this, &attrs);
 }
@@ -15,10 +15,15 @@ void DisplayTask::start() {
 void DisplayTask::run(void* params) {
     DisplayTask* self = static_cast<DisplayTask*>(params);
 
-    if (xSemaphoreTake(self->_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) 
+    if (xSemaphoreTake(self->_mutex, pdMS_TO_TICKS(10000)) == pdTRUE) 
     {
         self->oledPtr->init();
         self->oledPtr->fill(0x00); // Pulisce il display
+        osDelay(1000);
+        self->oledPtr->drawBitmap(self->oledPtr->myBitmapallArray[0],0,0,128,64); // Disegna l'immagine della goccia
+        osDelay(1000);
+        self->oledPtr->fill(0x00); // Pulisce il display
+        osDelay(1000);
         xSemaphoreGive(self->_mutex);
     }
 
@@ -57,17 +62,13 @@ void DisplayTask::run(void* params) {
             else 
             {
             // Gestione errore: coda non inizializzata
-                //self->oledPtr->fill(0x00);
-                //self->oledPtr->print(0, 0, " NADA QUEUE");
-            //self->oledPtr->print(0, 2, " Display Task OK!");
+            
             }
         }
 
         else {
             // Gestione errore: coda non inizializzata
-                //self->oledPtr->fill(0x00);
-                //self->oledPtr->print(0, 0, " Coda NULL");
-            //self->oledPtr->print(0, 2, " Display Task OK!");
+            
         }
         
         osDelay(1000);

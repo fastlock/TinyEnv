@@ -21,7 +21,7 @@ static SemaphoreHandle_t i2cMutex = nullptr;
 extern "C" void ApplicationDefine(void) {
     i2cMutex = xSemaphoreCreateMutex();
     
-    sensorDataQueue = xQueueCreate(2, sizeof(SensorData_t));
+    sensorDataQueue = xQueueCreate(10, sizeof(SensorData_t));
 
     if (sensorDataQueue == NULL) {
         // Errore creazione queue

@@ -47,6 +47,7 @@ void OLED::init() {
     sendCommand(0xA4);
     sendCommand(0xA6);
     sendCommand(0xAF);
+
 }
 
 void OLED::fill(uint8_t pattern) {
@@ -94,6 +95,26 @@ void OLED::clearArea(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
             sendData(0x00);
         }
     }
+}
+
+void OLED::drawBitmap(const unsigned char* bitmap, uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
+    // for (uint8_t page = 0; page < 8; page++) {
+    //     setCursor(0, page);
+    //     for (uint8_t col = 0; col < 128; col++) {
+    //         sendData(bitmap[page * 128 + col]);
+    //     }
+    // }
+    
+    uint8_t pages = (height + 7) / 8;
+    for (uint8_t page = 0; page < pages; page++) {
+        setCursor(x, y + page);
+        for (uint8_t col = 0; col < width; col++) {
+            sendData(bitmap[page * width + col]);
+        }
+    }
+    
+
+    
 }
 // Definizione della matrice del font 5x7
 const uint8_t OLED::font5x7[96][5] = 
@@ -195,3 +216,5 @@ const uint8_t OLED::font5x7[96][5] =
     {0x00,0x41,0x36,0x08,0x00}, // '}'
     {0x10,0x08,0x08,0x10,0x08}, // '~'
     };
+
+   
