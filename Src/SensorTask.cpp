@@ -10,7 +10,7 @@ void SerialPrint(const char* msg) {
 }
 
 
-SensorTask::SensorTask(I2C_HandleTypeDef * i2cPeriph,QueueHandle_t queue) : local_sht2x_ui2c(i2cPeriph), _sensorDataQueue(queue),taskHandle(nullptr) {}
+SensorTask::SensorTask(I2C_HandleTypeDef * i2cPeriph,QueueHandle_t queue,SemaphoreHandle_t mutex): local_sht2x_ui2c(i2cPeriph), _sensorDataQueue(queue),_mutex(mutex),taskHandle(nullptr) {}
 
 void SensorTask::start() {
     osThreadAttr_t attrs = {
@@ -24,25 +24,36 @@ void SensorTask::start() {
 void SensorTask::run(void* params) {
     SensorTask* self = static_cast<SensorTask*>(params);
     float celsius, humidity;
-    
-    // Scans the I2C bus for devices
-    self->I2C_Scan(self->local_sht2x_ui2c);
-
-    SHT2x_Init(self->local_sht2x_ui2c);
-	SHT2x_SetResolution(RES_14_12);
-    
     celsius= 0.0f;
     humidity = 0.0f;
 
+    if (xSemaphoreTake(self->_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) 
+    {
+        // Scans the I2C bus for devices
+        self->I2C_Scan(self->local_sht2x_ui2c);
+
+        SHT2x_Init(self->local_sht2x_ui2c);
+	    SHT2x_SetResolution(RES_14_12);
+        xSemaphoreGive(self->_mutex);
+    }
+    else 
+    {
+        // Gestione errore: non è stato possibile prendere il mutex
+        // Qui potresti voler loggare un errore o prendere altre azioni
+    }
+
     while (true) {
 
-        celsius = SHT2x_GetTemperature(SHT2x_HOLD_MASTER);
-        humidity = SHT2x_GetRelativeHumidity(SHT2x_HOLD_MASTER);
-
+        if (xSemaphoreTake(self->_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) 
+        {
+            celsius = SHT2x_GetTemperature(SHT2x_HOLD_MASTER);
+            humidity = SHT2x_GetRelativeHumidity(SHT2x_HOLD_MASTER);
+            xSemaphoreGive(self->_mutex);
+        }
         // Stampa su seriale
         char buffer[64];
         snprintf(buffer, sizeof(buffer), "Temp: %.2f C, Hum: %.2f%%\r\n", celsius, humidity);
-        SerialPrint(buffer);
+        //SerialPrint(buffer);
         // Invia i dati alla coda
         if (self->_sensorDataQueue != nullptr) 
         {

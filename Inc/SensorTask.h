@@ -5,15 +5,17 @@
 #include "cmsis_os.h"
 #include "AppConst.h"
 #include "queue.h"
+#include "semphr.h"
 
 class SensorTask {
 public:
-    explicit SensorTask(I2C_HandleTypeDef * i2cPeriph, QueueHandle_t queue);
+    explicit SensorTask(I2C_HandleTypeDef * i2cPeriph, QueueHandle_t queue,SemaphoreHandle_t mutex);
     void start();
 
 private:
 
     QueueHandle_t _sensorDataQueue;
+    SemaphoreHandle_t _mutex;
     I2C_HandleTypeDef *local_sht2x_ui2c;
     void I2C_Scan(I2C_HandleTypeDef * i2cPeriph);
     static void run(void* params);
