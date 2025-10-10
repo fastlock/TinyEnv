@@ -48,8 +48,11 @@ void DisplayTask::run(void* params) {
                     self->oledPtr->print(0, 0, buffer);
                     memset(buffer, 0, sizeof(buffer));
                     snprintf(buffer, sizeof(buffer), "Hum: %.2f RH", receivedData.humidity);
-                    //self->oledPtr->clearArea(0, 16, 128, 16); // Pulisce la parte centrale del display
                     self->oledPtr->print(0, 2, buffer);
+                    memset(buffer, 0, sizeof(buffer));
+                    snprintf(buffer, sizeof(buffer), "VOC: %d Raw", receivedData.voc);
+                    //self->oledPtr->clearArea(0, 16, 128, 16); // Pulisce la parte centrale del display
+                    self->oledPtr->print(0, 4, buffer);
                     
                     xSemaphoreGive(self->_mutex);
                 } 

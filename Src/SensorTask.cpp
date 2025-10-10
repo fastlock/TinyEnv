@@ -2,6 +2,7 @@
 #include <stdio.h>  // Per snprintf
 #include <cstring> // Per strlen
 #include "stm32f4xx_hal.h"  // Per HAL_UART_Transmit
+#include "sgp40.h"  // Per SGP40_MeasureCompensated
 
 extern UART_HandleTypeDef huart2;  // dichiara l’handle come esterna
 
@@ -24,6 +25,10 @@ void SensorTask::start() {
 void SensorTask::run(void* params) {
     SensorTask* self = static_cast<SensorTask*>(params);
     float celsius, humidity;
+    uint16_t voc;
+    uint8_t isSGPSensorOK=0;
+    HAL_StatusTypeDef sgp40ret,sgp40ResetRet;
+    voc=0;
     celsius= 0.0f;
     humidity = 0.0f;
 
@@ -44,20 +49,53 @@ void SensorTask::run(void* params) {
 
     while (true) {
 
-        if (xSemaphoreTake(self->_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) 
+        if (xSemaphoreTake(self->_mutex, pdMS_TO_TICKS(5000)) == pdTRUE) 
         {
             celsius = SHT2x_GetTemperature(SHT2x_HOLD_MASTER);
             humidity = SHT2x_GetRelativeHumidity(SHT2x_HOLD_MASTER);
+            osDelay(50); // Attende il tempo di misura minimo
+            if (HAL_I2C_IsDeviceReady(self->local_sht2x_ui2c, (0x59<<1), 10, 100) == HAL_OK) {
+                // Legge il sensore SGP40 con compensazione
+                
+                HAL_Delay(50);
+                sgp40ResetRet = SGP40_SoftReset(self->local_sht2x_ui2c);
+                HAL_Delay(50);
+                if(sgp40ResetRet != HAL_OK)
+                {
+                    // Gestione errore nella lettura del sensore SGP40
+                    isSGPSensorOK=0;
+                    voc=0; // o un altro valore di default/error
+                }
+                else
+                {
+                //sgp40ret = SGP40_MeasureCompensated(self->local_sht2x_ui2c, celsius, humidity, &voc);
+                    osDelay(50); // Attende il tempo di misura minimo
+                    sgp40ret = SGP40_MeasureRawTest(self->local_sht2x_ui2c, &voc);
+                    if (sgp40ret == HAL_OK) 
+                    {
+                        // voc contiene il valore VOC raw compensato
+                        isSGPSensorOK=1;
+                    }
+                    else 
+                    {
+                        // Gestione errore nella lettura del sensore SGP40
+                        isSGPSensorOK=0;
+                        voc=0; // o un altro valore di default/error
+                    }
+                }
+            }
+            
             xSemaphoreGive(self->_mutex);
+
         }
         // Stampa su seriale
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "Temp: %.2f C, Hum: %.2f%%\r\n", celsius, humidity);
-        //SerialPrint(buffer);
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer), "Temp: %.2f C, Hum: %.2f%%, VOC: %d, ret:%d\r\n", celsius, humidity, voc, sgp40ret );
+        SerialPrint(buffer);
         // Invia i dati alla coda
         if (self->_sensorDataQueue != nullptr) 
         {
-            SensorData_t data = {celsius, humidity};
+            SensorData_t data = {celsius, humidity,voc};
             xQueueSend(self->_sensorDataQueue, &data, 100);
         }
 

@@ -2,6 +2,7 @@
 #define SENSOR_TASK_H
 
 #include "sht2x_for_stm32_hal.h"
+#include "sgp40.h"
 #include "cmsis_os.h"
 #include "AppConst.h"
 #include "queue.h"
