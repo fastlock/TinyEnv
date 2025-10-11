@@ -30,10 +30,11 @@ static uint16_t humidity_to_raw(float humidity_percent) {
 }
 
 HAL_StatusTypeDef SGP40_MeasureRawTest(I2C_HandleTypeDef *hi2c, uint16_t *voc_raw) {
-    uint8_t cmd[2] = {0x26, 0x0F};
+    //0x26 0F 80 00 A2 66 66 93 
+    uint8_t cmd[8] = {0x26, 0x0F, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93};
     uint8_t rx_data[3];
 
-    HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(hi2c, (SGP40_I2C_ADDR), cmd, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(hi2c, (SGP40_I2C_ADDR), cmd, 8, HAL_MAX_DELAY);
     if (ret != HAL_OK) return ret;
 
     HAL_Delay(30);
@@ -50,7 +51,7 @@ HAL_StatusTypeDef SGP40_MeasureRawTest(I2C_HandleTypeDef *hi2c, uint16_t *voc_ra
 
 
 HAL_StatusTypeDef SGP40_MeasureCompensated(I2C_HandleTypeDef *hi2c, float temperature_c, float humidity_percent, uint16_t *voc_raw) {
-    uint8_t tx_buf[7];
+    uint8_t tx_buf[8];
     uint8_t rx_buf[3];
     HAL_StatusTypeDef ret;
 
@@ -67,9 +68,9 @@ HAL_StatusTypeDef SGP40_MeasureCompensated(I2C_HandleTypeDef *hi2c, float temper
     tx_buf[5] = (raw_temp >> 8) & 0xFF;
     tx_buf[6] = raw_temp & 0xFF;
     uint8_t crc_temp = sensirion_crc8(&tx_buf[5], 2);
-    // crc_temp non inviato separatamente perché sensore si aspetta solo 7 byte
-
-    ret = HAL_I2C_Master_Transmit(hi2c, SGP40_I2C_ADDR, tx_buf, sizeof(tx_buf), HAL_MAX_DELAY);
+    tx_buf[7] = crc_temp;
+    
+    ret = HAL_I2C_Master_Transmit(hi2c, SGP40_I2C_ADDR, tx_buf, 8, HAL_MAX_DELAY);
     if (ret != HAL_OK) return ret;
 
     HAL_Delay(30);

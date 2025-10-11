@@ -57,20 +57,9 @@ void SensorTask::run(void* params) {
             if (HAL_I2C_IsDeviceReady(self->local_sht2x_ui2c, (0x59<<1), 10, 100) == HAL_OK) {
                 // Legge il sensore SGP40 con compensazione
                 
-                HAL_Delay(50);
-                sgp40ResetRet = SGP40_SoftReset(self->local_sht2x_ui2c);
-                HAL_Delay(50);
-                if(sgp40ResetRet != HAL_OK)
-                {
-                    // Gestione errore nella lettura del sensore SGP40
-                    isSGPSensorOK=0;
-                    voc=0; // o un altro valore di default/error
-                }
-                else
-                {
-                //sgp40ret = SGP40_MeasureCompensated(self->local_sht2x_ui2c, celsius, humidity, &voc);
                     osDelay(50); // Attende il tempo di misura minimo
-                    sgp40ret = SGP40_MeasureRawTest(self->local_sht2x_ui2c, &voc);
+                    sgp40ret = SGP40_MeasureCompensated(self->local_sht2x_ui2c, celsius, humidity, &voc);
+                    //sgp40ret = SGP40_MeasureRawTest(self->local_sht2x_ui2c, &voc);
                     if (sgp40ret == HAL_OK) 
                     {
                         // voc contiene il valore VOC raw compensato
@@ -82,7 +71,7 @@ void SensorTask::run(void* params) {
                         isSGPSensorOK=0;
                         voc=0; // o un altro valore di default/error
                     }
-                }
+                //}
             }
             
             xSemaphoreGive(self->_mutex);
