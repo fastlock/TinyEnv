@@ -4,6 +4,11 @@
 #include "stm32f4xx_hal.h"  // Per HAL_UART_Transmit
 #include "sgp40.h"  // Per SGP40_MeasureCompensated
 
+extern "C" {
+#include "sensirion_gas_index_algorithm.h"
+}
+
+
 extern UART_HandleTypeDef huart2;  // dichiara l’handle come esterna
 
 void SerialPrint(const char* msg) {
@@ -26,8 +31,12 @@ void SensorTask::run(void* params) {
     SensorTask* self = static_cast<SensorTask*>(params);
     float celsius, humidity;
     uint16_t voc;
+    int32_t voc_index_value=0; 
     uint8_t isSGPSensorOK=0;
     HAL_StatusTypeDef sgp40ret,sgp40ResetRet;
+    // Inizializza l'algoritmo di calcolo dell'indice di qualità dell'aria
+    GasIndexAlgorithm_init(&self->Gparams, GasIndexAlgorithm_ALGORITHM_TYPE_VOC);
+
     voc=0;
     celsius= 0.0f;
     humidity = 0.0f;
@@ -64,6 +73,8 @@ void SensorTask::run(void* params) {
                     {
                         // voc contiene il valore VOC raw compensato
                         isSGPSensorOK=1;
+                        GasIndexAlgorithm_process(&self->Gparams, voc, &voc_index_value);
+
                     }
                     else 
                     {
@@ -79,12 +90,12 @@ void SensorTask::run(void* params) {
         }
         // Stampa su seriale
         char buffer[128];
-        snprintf(buffer, sizeof(buffer), "Temp: %.2f C, Hum: %.2f%%, VOC: %d, ret:%d\r\n", celsius, humidity, voc, sgp40ret );
+        snprintf(buffer, sizeof(buffer), "Temp: %.2f C, Hum: %.2f%%, VOC: %d, ret:%d\r\n", celsius, humidity, voc_index_value, sgp40ret );
         SerialPrint(buffer);
         // Invia i dati alla coda
         if (self->_sensorDataQueue != nullptr) 
         {
-            SensorData_t data = {celsius, humidity,voc};
+            SensorData_t data = {celsius, humidity,voc_index_value};
             xQueueSend(self->_sensorDataQueue, &data, 100);
         }
 
