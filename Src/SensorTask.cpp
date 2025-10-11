@@ -4,8 +4,10 @@
 #include "stm32f4xx_hal.h"  // Per HAL_UART_Transmit
 #include "sgp40.h"  // Per SGP40_MeasureCompensated
 
+
 extern "C" {
 #include "sensirion_gas_index_algorithm.h"
+#include "bmp180_for_stm32_hal.h"
 }
 
 
@@ -29,17 +31,22 @@ void SensorTask::start() {
 
 void SensorTask::run(void* params) {
     SensorTask* self = static_cast<SensorTask*>(params);
-    float celsius, humidity;
+    float celsius, humidity, pressure;
     uint16_t voc;
     int32_t voc_index_value=0; 
     uint8_t isSGPSensorOK=0;
     HAL_StatusTypeDef sgp40ret,sgp40ResetRet;
+
     // Inizializza l'algoritmo di calcolo dell'indice di qualità dell'aria
     GasIndexAlgorithm_init(&self->Gparams, GasIndexAlgorithm_ALGORITHM_TYPE_VOC);
-
+    bool bmp280OK;
+    float bmp280_temp;
+    float bmp280_hum;
     voc=0;
     celsius= 0.0f;
     humidity = 0.0f;
+    pressure= 0.0f;
+    bmp280OK = false;
 
     if (xSemaphoreTake(self->_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) 
     {
@@ -48,6 +55,10 @@ void SensorTask::run(void* params) {
 
         SHT2x_Init(self->local_sht2x_ui2c);
 	    SHT2x_SetResolution(RES_14_12);
+
+        BMP180_Init(self->local_sht2x_ui2c);
+        BMP180_SetOversampling(BMP180_ULTRA);
+        BMP180_UpdateCalibrationData();
         xSemaphoreGive(self->_mutex);
     }
     else 
@@ -82,20 +93,22 @@ void SensorTask::run(void* params) {
                         isSGPSensorOK=0;
                         voc=0; // o un altro valore di default/error
                     }
-                //}
             }
+            
+            
+            pressure = BMP180_GetPressure();
             
             xSemaphoreGive(self->_mutex);
 
         }
         // Stampa su seriale
         char buffer[128];
-        snprintf(buffer, sizeof(buffer), "Temp: %.2f C, Hum: %.2f%%, VOC: %d, ret:%d\r\n", celsius, humidity, voc_index_value, sgp40ret );
+        snprintf(buffer, sizeof(buffer), "Temp: %.2f C, Hum: %.2f%%, VOC: %d, pressure:%.2f\r\n", celsius, humidity, voc_index_value, pressure);
         SerialPrint(buffer);
         // Invia i dati alla coda
         if (self->_sensorDataQueue != nullptr) 
         {
-            SensorData_t data = {celsius, humidity,voc_index_value};
+            SensorData_t data = {celsius, humidity,pressure,voc_index_value};
             xQueueSend(self->_sensorDataQueue, &data, 100);
         }
 

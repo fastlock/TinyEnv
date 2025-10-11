@@ -4,6 +4,7 @@
 typedef struct {
     float temperature;
     float humidity;
+    float pressure;
     uint32_t voc;
 } SensorData_t;
 
